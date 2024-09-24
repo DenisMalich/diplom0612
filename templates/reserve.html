@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Резервирование</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        /* Основные стили страницы */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: #007bff;
+            color: #fff;
+            padding: 15px 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        nav ul li {
+            margin: 0 15px;
+        }
+
+        nav ul li a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 18px;
+            transition: color 0.3s;
+        }
+
+        nav ul li a:hover {
+            color: #e0e0e0;
+        }
+
+        main {
+            padding: 20px;
+            max-width: 800px;
+            margin: 20px auto;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #007bff;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        label {
+            font-size: 1rem;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="tel"],
+        select {
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .item-details {
+            margin-bottom: 20px;
+        }
+
+        .item-details h2 {
+            margin-bottom: 10px;
+        }
+
+        .item-details p {
+            font-size: 1rem;
+            margin: 5px 0;
+        }
+
+        /* Адаптивный дизайн */
+        @media (max-width: 600px) {
+            nav ul {
+                flex-direction: column;
+            }
+
+            nav ul li {
+                margin: 10px 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('index') }}">Главная</a></li>
+                <li><a href="{{ url_for('items') }}">Товары</a></li>
+                <li><a href="{{ url_for('profile') }}">Профиль</a></li>
+                <li><a href="{{ url_for('admin_login') }}">Вход для админа</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h1>Резервирование товара</h1>
+        <div class="item-details">
+            <h2>{{ item.name }}</h2>
+            <p><strong>Размер:</strong> {{ item.size }}</p>
+            <p><strong>Цвет:</strong> {{ item.color }}</p>
+            <p><strong>Цена:</strong> {{ item.price }}</p>
+            <p><strong>Статус:</strong> {{ item.status }}</p>
+        </div>
+        <form action="{{ url_for('reserve', item_id=item.id) }}" method="post">
+            <label for="user_name">Имя:</label>
+            <input type="text" id="user_name" name="user_name" required>
+
+            <label for="user_surname">Фамилия:</label>
+            <input type="text" id="user_surname" name="user_surname" required>
+
+            <label for="reservation_type">Тип бронирования:</label>
+            <select id="reservation_type" name="reservation_type" required>
+                <option value="single_day">Один день</option>
+                <option value="interval">Интервал</option>
+            </select>
+
+            <div id="single_day_container" class="reservation-container">
+                <label for="reservation_date">Дата резервирования:</label>
+                <input type="date" id="reservation_date" name="reservation_date" min="{{ today_date }}"
+                    max="{{ max_date }}">
+            </div>
+
+            <div id="interval_container" class="reservation-container" style="display: none;">
+                <label for="start_date">Дата начала:</label>
+                <input type="date" id="start_date" name="start_date" min="{{ today_date }}" max="{{ max_date }}">
+
+                <label for="end_date">Дата окончания:</label>
+                <input type="date" id="end_date" name="end_date" min="{{ today_date }}" max="{{ max_date }}">
+            </div>
+
+            <label for="payment_method">Метод оплаты:</label>
+            <select id="payment_method" name="payment_method" required>
+                <option value="">Выберите метод оплаты</option>
+                <option value="credit_card">Кредитная карта</option>
+                <option value="paypal">PayPal</option>
+                <option value="cash">Наличные</option>
+            </select>
+
+            <label for="user_phone">Ваш номер телефона:</label>
+            <input type="tel" id="user_phone" name="user_phone" pattern="\+?[0-9]{11,15}" placeholder="+79991112233"
+                required>
+
+            <button type="submit">Забронировать</button>
+        </form>
+
+        <script>
+            document.getElementById('reservation_type').addEventListener('change', function () {
+                const singleDayContainer = document.getElementById('single_day_container');
+                const intervalContainer = document.getElementById('interval_container');
+
+                if (this.value === 'interval') {
+                    singleDayContainer.style.display = 'none';
+                    intervalContainer.style.display = 'block';
+                } else {
+                    singleDayContainer.style.display = 'block';
+                    intervalContainer.style.display = 'none';
+                }
+            });
+        </script>
+    </main>
+</body>
+
+</html>

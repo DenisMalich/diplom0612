@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Главная страница</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        /* Общие стили */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            width: 250px;
+            background-color: #1e3a8a;
+            /* Яркий синий цвет */
+            color: #fff;
+            padding: 15px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            /* Убедимся, что меню всегда поверх */
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        nav ul li {
+            margin: 15px 0;
+        }
+
+        nav ul li a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 18px;
+            display: block;
+            padding: 10px;
+            border-radius: 8px;
+            transition: background-color 0.3s, color 0.3s, transform 0.3s;
+        }
+
+        nav ul li a:hover {
+            background-color: #3b82f6;
+            /* Светло-синий */
+            color: #fff;
+            transform: translateX(5px);
+        }
+
+        main {
+            margin-left: 250px;
+            flex: 1;
+            padding: 20px;
+            background: url("https://static.tildacdn.one/tild3064-3835-4537-a565-653331636437/high-heels-kiev.jpg") no-repeat center center/cover;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: calc(100vh - 60px);
+            position: relative;
+            /* Для корректного позиционирования на мобильных устройствах */
+        }
+
+        .hero {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .hero-content {
+            background: rgba(0, 0, 0, 0.7);
+            /* Темный фон с прозрачностью */
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 90%;
+            width: 100%;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 1s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            color: #fbbf24;
+            /* Ярко-желтый */
+        }
+
+        .hero p {
+            font-size: 1.125rem;
+            margin-top: 10px;
+            color: #e5e7eb;
+            /* Светло-серый */
+        }
+
+        .hero .btn {
+            background: linear-gradient(135deg, #fbbf24, #f87171);
+            /* Градиент от желтого до красного */
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-size: 18px;
+            margin-top: 20px;
+            display: inline-block;
+            transition: background-color 0.3s, transform 0.3s, box-shadow 0.3s;
+        }
+
+        .hero .btn:hover {
+            background: linear-gradient(135deg, #f87171, #fbbf24);
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        footer {
+            background-color: #1e3a8a;
+            /* Яркий синий цвет */
+            color: #fff;
+            text-align: center;
+            padding: 15px 0;
+            width: 100%;
+            position: relative;
+        }
+
+        /* Мобильная версия */
+        @media (max-width: 768px) {
+            header {
+                width: 100%;
+                height: auto;
+                position: static;
+                box-shadow: none;
+                /* Убираем тень на мобильных устройствах */
+            }
+
+            nav ul {
+                flex-direction: row;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            nav ul li {
+                margin: 0 5px;
+            }
+
+            nav ul li a {
+                padding: 10px 15px;
+            }
+
+            main {
+                margin-left: 0;
+                height: auto;
+                /* Убираем высоту для мобильных устройств */
+                padding: 20px 10px;
+                background-size: cover;
+                /* Обеспечиваем корректное отображение фона */
+            }
+
+            .hero h1 {
+                font-size: 1.75rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('index') }}">Главная</a></li>
+                <li><a href="{{ url_for('items') }}">Товары</a></li>
+                <li><a href="{{ url_for('admin_login') }}">Вход для админа</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <h1>Аренда вещей в Тольятти</h1>
+                <p>Платья, костюмы для танцев и многое другое! Найдите идеальный наряд для любого случая.</p>
+                <a href="{{ url_for('items') }}" class="btn">Посмотреть товары</a>
+            </div>
+        </section>
+    </main>
+    <footer>
+        &copy; 2024 NADEN. Все права защищены.
+    </footer>
+</body>
+
+</html>

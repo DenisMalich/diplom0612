@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Товары</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        /* Общие стили */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: url('static/images/photo-1537832816519-689ad163238b.jpeg');
+            background-size: cover;
+            background-position: center;
+        }
+
+        header {
+            background-color: rgba(0, 123, 255, 0.0);
+            /* Установите фон как прозрачный */
+            color: #fff;
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: none;
+            /* Удалите границу, если есть */
+            box-shadow: none;
+            /* Удалите тень, если есть */
+        }
+
+        .menu-button {
+            background-color: transparent;
+            /* Прозрачный фон для кнопки */
+            color: #007bff;
+            /* Цвет текста кнопки */
+            border: 2px solid #007bff;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            z-index: 1001;
+            display: none;
+            text-transform: uppercase;
+            font-weight: bold;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        nav {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            width: 250px;
+            background-color: rgba(255, 255, 255, 0.9);
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+            padding: 15px 0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        nav ul li {
+            margin: 10px 0;
+        }
+
+        nav ul li a {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 22px;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: color 0.3s, font-weight 0.3s;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        nav ul li a:hover,
+        .active {
+            color: #0056b3;
+            font-weight: 700;
+        }
+
+        .close-menu {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 35px;
+            color: #333;
+            cursor: pointer;
+        }
+
+        .close-menu:hover {
+            color: #000;
+        }
+
+        main {
+            margin-left: 250px;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            flex-grow: 1;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 8px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #25271a;
+        }
+
+        .filter-form {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .filter-form label {
+            margin-right: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .filter-form select {
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .filter-form button {
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 600;
+        }
+
+        .filter-form button:hover {
+            background-color: #0056b3;
+        }
+
+        .item-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .item {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 100%;
+            max-width: 300px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .item img {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .item img:hover {
+            transform: scale(1.05);
+        }
+
+        .item h2 {
+            margin: 0 0 10px;
+            font-size: 1.5rem;
+        }
+
+        .item p {
+            margin: 5px 0;
+            font-size: 1rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .item .price {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #007bff;
+            margin: 10px 0;
+        }
+
+        .item a {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: #fff;
+            text-decoration: none;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 600;
+        }
+
+        .item a:hover {
+            background-color: #0056b3;
+        }
+
+        footer {
+            background-color: transparent;
+            /* Установите фон как прозрачный */
+            color: #fff;
+            /* Цвет текста */
+            text-align: center;
+            padding: 15px 0;
+            margin-top: auto;
+            position: relative;
+            z-index: 1000;
+            width: 100%;
+            box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            /* Эффект размытия для прозрачности */
+        }
+
+
+        @media (max-width: 768px) {
+            nav {
+                display: none;
+            }
+
+            .menu-button {
+                display: block;
+            }
+
+            main {
+                margin-left: 0;
+            }
+
+            nav.active {
+                display: flex;
+            }
+
+            nav ul {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            nav ul li {
+                margin: 5px 10px;
+            }
+
+            nav ul li a {
+                font-size: 14px;
+                text-transform: capitalize;
+                /* Первая буква заглавная */
+            }
+        }
+
+        /* Модальные окна */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-content {
+            margin: 10% auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            max-width: 90%;
+            position: relative;
+        }
+
+        .modal-content img {
+            width: 100%;
+            height: auto;
+        }
+
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            color: #333;
+            font-size: 35px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-description {
+            margin-top: 10px;
+            font-size: 1rem;
+            color: #333;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <button class="menu-button" onclick="toggleMenu()">Меню</button>
+        <nav id="mobileMenu">
+            <span class="close-menu" onclick="toggleMenu()">&times;</span>
+            <ul>
+                <li><a href="{{ url_for('index') }}"
+                        class="{{ 'active' if request.args.get('category') == '' }}">Главная</a></li>
+                <li><a href="{{ url_for('items', category='clothing') }}"
+                        class="{{ 'active' if request.args.get('category') == 'clothing' }}">Одежда</a></li>
+                <li><a href="{{ url_for('items', category='accessories') }}"
+                        class="{{ 'active' if request.args.get('category') == 'accessories' }}">Аксессуары</a></li>
+                <li><a href="{{ url_for('items', category='shoes') }}"
+                        class="{{ 'active' if request.args.get('category') == 'shoes' }}">Обувь</a></li>
+                <li><a href="{{ url_for('items', category='headwear') }}"
+                        class="{{ 'active' if request.args.get('category') == 'headwear' }}">Головные уборы</a></li>
+                <li><a href="{{ url_for('items', category='ready_to_wear') }}"
+                        class="{{ 'active' if request.args.get('category') == 'ready_to_wear' }}">Готовый образ</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h1>Наши товары</h1>
+        <div class="filter-form">
+            <form method="get">
+                <label for="category">Категория:</label>
+                <select name="category" id="category">
+                    <option value="">Все</option>
+                    <option value="clothing" {{ 'selected' if request.args.get('category')=='clothing' }}>Одежда
+                    </option>
+                    <option value="accessories" {{ 'selected' if request.args.get('category')=='accessories' }}>
+                        Аксессуары</option>
+                    <option value="shoes" {{ 'selected' if request.args.get('category')=='shoes' }}>Обувь</option>
+                    <option value="headwear" {{ 'selected' if request.args.get('category')=='headwear' }}>Головные уборы
+                    </option>
+                    <option value="ready_to_wear" {{ 'selected' if request.args.get('category')=='ready_to_wear' }}>
+                        Готовый образ</option>
+                </select>
+                <button type="submit">Применить</button>
+            </form>
+        </div>
+
+        <div class="item-list">
+            {% for item in items %}
+            <div class="item">
+                <img src="{{ url_for('static', filename='images/' + (item.image if item.image else 'default.jpg')) }}"
+                    alt="{{ item.name }}"
+                    onclick="openModal('{{ item.name }}', '{{ item.image }}', '{{ item.description }}')">
+                <h2>{{ item.name }}</h2>
+                <p class="price">Цена {{ item.price }}</p>
+                <p>{{ item.short_description }}</p>
+                <a href="{{ url_for('item_detail', item_id=item.id) }}">Подробнее</a>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+    <footer>
+        <p>© 2024 Все права защищены</p>
+    </footer>
+
+    <!-- Модальные окна -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <img id="modalImage" src="" alt="Фото товара">
+            <div id="modalDescription" class="modal-description"></div>
+        </div>
+    </div>
+
+    <script>
+        function openModal(name, image, description) {
+            document.getElementById('modalImage').src = '/static/images/' + image;
+            document.getElementById('modalDescription').innerText = description;
+            document.getElementById('imageModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+
+        window.onclick = function (event) {
+            if (event.target === document.getElementById('imageModal')) {
+                closeModal();
+            }
+        }
+
+        function toggleMenu() {
+            var menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('active');
+        }
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var prices = document.querySelectorAll('.price');
+            prices.forEach(function (priceElem) {
+                var priceText = priceElem.textContent.replace(/[^0-9.,]/g, ''); // Удаляем всё, кроме цифр и запятых
+                var price = parseFloat(priceText.replace(',', '.'));
+                if (!isNaN(price)) {
+                    priceElem.textContent = 'Цена ' + Math.round(price) + ' руб';
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

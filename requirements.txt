@@ -1,0 +1,9 @@
+Flask
+Flask-SQLAlchemy
+Flask-WTF
+email-validator
+Werkzeug
+requests
+python-telegram-bot
+Flask-Migrate
+python-telegram-bot

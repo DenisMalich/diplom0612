@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Детали товара</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            background-color: #007bff;
+            width: 100%;
+            padding: 10px 0;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        nav ul li {
+            margin-bottom: 10px;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+            padding: 10px 20px;
+            display: block;
+            background-color: #0056b3;
+            border-radius: 8px;
+            width: 100%;
+            text-align: center;
+        }
+
+        nav ul li a:hover {
+            background-color: #004085;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 90%;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        img {
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        p {
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        /* Стиль для переноса текста в описании */
+        .description {
+            white-space: pre-line;
+            word-wrap: break-word;
+            word-break: break-all;
+        }
+
+        a.button {
+            display: inline-block;
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        a.button:hover {
+            background-color: #0056b3;
+        }
+
+        footer {
+            margin-top: 40px;
+            font-size: 14px;
+            color: #888;
+        }
+
+        /* Адаптивный дизайн */
+        @media (min-width: 600px) {
+            nav ul {
+                flex-direction: row;
+                justify-content: center;
+            }
+
+            nav ul li {
+                margin-right: 10px;
+                margin-bottom: 0;
+            }
+
+            nav ul li a {
+                padding: 10px 30px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('index') }}">Главная</a></li>
+                <li><a href="{{ url_for('items') }}">Товары</a></li>
+                <li><a href="{{ url_for('clothing') }}">Одежда</a></li>
+                <li><a href="{{ url_for('accessories') }}">Аксессуары</a></li>
+                <li><a href="{{ url_for('footwear') }}">Обувь</a></li>
+                <li><a href="{{ url_for('headwear') }}">Головные уборы</a></li>
+                <li><a href="{{ url_for('complete_outfit') }}">Готовый образ</a></li>
+                <li><a href="{{ url_for('admin_login') }}">Вход для админа</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <div class="container">
+            <h1>{{ item.name }}</h1>
+            <img src="{{ url_for('static', filename='images/' + (item.image if item.image else 'default.jpg')) }}"
+                alt="{{ item.name }}">
+            <p>Размер: {{ item.size }}</p>
+            <p>Цвет: {{ item.color }}</p>
+            <p>Категория: {{ item.category }}</p>
+            <p>Цена: {{ item.price }}</p>
+            <p class="description">Описание: {{ item.description }}</p>
+            <a class="button" href="{{ url_for('reserve', item_id=item.id) }}">Забронировать</a>
+            <a class="button" href="{{ url_for('items') }}">Назад</a>
+        </div>
+    </main>
+    <footer>
+        &copy; 2024 NADEN. Все права защищены.
+    </footer>
+</body>
+
+</html>

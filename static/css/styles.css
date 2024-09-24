@@ -1,0 +1,170 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f0f0f0;
+    transition: background-color 0.3s ease;
+}
+
+/* Центрирование и оформление контейнера */
+.container {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 450px;
+    /* Сделаем контейнер немного меньше для лучшей адаптации */
+    width: 100%;
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Добавляем более плавную анимацию для отображения */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Поля ввода */
+input[type="file"],
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+    width: 100%;
+    /* Сделаем поля ввода по ширине контейнера */
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+input[type="file"]:hover,
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="password"]:hover {
+    border-color: #007bff;
+}
+
+/* Улучшаем фокус для полей ввода */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="file"]:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+}
+
+/* Кнопки */
+button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+    font-size: 18px;
+}
+
+/* Эффект при наведении на кнопку */
+button:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
+
+/* Активное состояние кнопки */
+button:active {
+    transform: scale(1.02);
+}
+
+/* Фокус на кнопке */
+button:focus {
+    outline: 2px solid #0056b3;
+    outline-offset: 2px;
+}
+
+/* Заголовки */
+h1,
+h2 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+/* Стили для ссылок */
+a {
+    color: #007bff;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+a:hover {
+    text-decoration: underline;
+    color: #0056b3;
+}
+
+a:focus {
+    outline: 2px solid #0056b3;
+    outline-offset: 2px;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 600px) {
+    .container {
+        padding: 15px;
+    }
+
+    button {
+        padding: 10px 20px;
+        font-size: 16px;
+    }
+
+    h1,
+    h2 {
+        font-size: 22px;
+    }
+
+    input[type="file"],
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+        padding: 10px;
+        /* Уменьшаем отступы для небольших экранов */
+    }
+}
+
+/* Адаптивность для небольших экранов (до 400px) */
+@media (max-width: 400px) {
+    .container {
+        padding: 10px;
+    }
+
+    button {
+        padding: 8px 15px;
+        font-size: 14px;
+    }
+
+    h1,
+    h2 {
+        font-size: 20px;
+    }
+
+    input[type="file"],
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+        padding: 8px;
+    }
+}

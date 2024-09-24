@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход для админа</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        /* Общие стили для страницы */
+        body {
+            background-color: #f4f7f9;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            width: 250px;
+            background-color: #1e3a8a;
+            /* Яркий синий цвет */
+            color: #fff;
+            padding: 15px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        nav ul li {
+            margin: 15px 0;
+        }
+
+        nav ul li a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 18px;
+            display: block;
+            padding: 10px;
+            border-radius: 8px;
+            transition: background-color 0.3s, color 0.3s, transform 0.3s;
+        }
+
+        nav ul li a:hover {
+            background-color: #3b82f6;
+            /* Светло-синий */
+            color: #fff;
+            transform: translateX(5px);
+        }
+
+        main {
+            margin-left: 250px;
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: calc(100vh - 60px);
+            position: relative;
+        }
+
+        .form-container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 360px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #1e3a8a;
+            font-size: 24px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 12px;
+            font-size: 16px;
+            color: #333;
+            text-align: left;
+        }
+
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            /* Градиент от синего до светло-синего */
+            color: #fff;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
+            font-size: 18px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #3b82f6, #1e3a8a);
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        footer {
+            background-color: #1e3a8a;
+            color: #fff;
+            text-align: center;
+            padding: 15px 0;
+            width: 100%;
+            position: relative;
+        }
+
+        /* Мобильная версия */
+        @media (max-width: 768px) {
+            header {
+                width: 100%;
+                height: auto;
+                position: static;
+                box-shadow: none;
+            }
+
+            nav ul {
+                flex-direction: row;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            nav ul li {
+                margin: 0 5px;
+            }
+
+            nav ul li a {
+                padding: 10px 15px;
+            }
+
+            main {
+                margin-left: 0;
+                height: auto;
+                padding: 20px 10px;
+            }
+
+            .form-container {
+                padding: 20px;
+                max-width: 90%;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('index') }}">Главная</a></li>
+                <li><a href="{{ url_for('items') }}">Товары</a></li>
+                <li><a href="{{ url_for('profile') }}">Профиль</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <div class="form-container">
+            <h1>Вход для админа</h1>
+            <form action="{{ url_for('admin_login') }}" method="post">
+                <label for="password">Пароль:</label>
+                <input type="password" id="password" name="password" required>
+                <button type="submit">Войти</button>
+            </form>
+        </div>
+    </main>
+    <footer>
+        &copy; 2024 NADEN. Все права защищены.
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Редактировать товар</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        /* Основные стили страницы редактирования */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .edit-container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .edit-container h2 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .form-group input[type="file"] {
+            border: none;
+        }
+
+        .submit-btn {
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            padding: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .submit-btn:hover {
+            background-color: #218838;
+        }
+
+        .image-upload {
+            margin-bottom: 20px;
+        }
+
+        .image-upload img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .edit-container {
+                margin: 10px;
+                padding: 15px;
+            }
+
+            .submit-btn {
+                padding: 10px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .edit-container {
+                margin: 5px;
+                padding: 10px;
+            }
+
+            .submit-btn {
+                padding: 8px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="edit-container">
+        <h2>Редактировать товар</h2>
+        <form action="{{ url_for('update_item', item_id=item.id) }}" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="name">Название:</label>
+                <input type="text" id="name" name="name" value="{{ item.name }}" required>
+            </div>
+            <div class="form-group">
+                <label for="size">Размер:</label>
+                <input type="text" id="size" name="size" value="{{ item.size }}" required>
+            </div>
+            <div class="form-group">
+                <label for="color">Цвет:</label>
+                <input type="text" id="color" name="color" value="{{ item.color }}" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Описание:</label>
+                <input type="text" id="description" name="description" value="{{ item.description }}" required>
+            </div>
+            <div class="form-group">
+                <label for="category">Категория:</label>
+                <select id="category" name="category" required>
+                    <option value="clothing" {% if item.category=='clothing' %}selected{% endif %}>Одежда</option>
+                    <option value="accessories" {% if item.category=='accessories' %}selected{% endif %}>Аксессуары
+                    </option>
+                    <option value="shoes" {% if item.category=='shoes' %}selected{% endif %}>Обувь</option>
+                    <option value="headwear" {% if item.category=='headwear' %}selected{% endif %}>Головные уборы
+                    </option>
+                    <option value="ready_to_wear" {% if item.category=='ready_to_wear' %}selected{% endif %}>Готовый
+                        образ</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="price">Цена:</label>
+                <input type="number" id="price" name="price" step="0.01" value="{{ item.price }}" required>
+            </div>
+            <div class="form-group">
+                <label for="status">Статус:</label>
+                <input type="text" id="status" name="status" value="{{ item.status }}" required>
+            </div>
+            <div class="image-upload">
+                <label for="image">Загрузить новое фото:</label>
+                <input type="file" id="image" name="image" accept="image/*">
+                {% if item.image %}
+                <img id="preview" src="{{ url_for('static', filename='images/' + item.image) }}"
+                    alt="Предпросмотр изображения">
+                {% endif %}
+            </div>
+            <button type="submit" class="submit-btn">Сохранить изменения</button>
+        </form>
+
+    </div>
+</body>
+
+</html>
