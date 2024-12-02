@@ -186,10 +186,10 @@ def update_item(item_id):
 
     item.status = request.form['status']
 
-    # Обработка загружаемого изображения
+    
     image = request.files.get('image')
     if image and image.filename:
-        # Проверка на допустимый тип изображения
+        
         if not allowed_file(image.filename):
             flash('Недопустимый тип файла. Пожалуйста, загрузите изображение.', 'danger')
             return redirect(url_for('edit_item', item_id=item_id))
@@ -207,7 +207,7 @@ def update_item(item_id):
                 f"Ошибка при сохранении изображения для элемента ID {item_id}: {e}")
             flash('Ошибка при загрузке изображения. Попробуйте еще раз.', 'danger')
 
-    # Сохраняем изменения в базе данных
+    
     try:
         db.session.commit()
         logging.info(f"Элемент ID {item_id} успешно обновлен.")
@@ -250,11 +250,11 @@ def reserve(item_id):
             flash('Некорректный номер телефона. Пожалуйста, введите корректный номер.', 'danger')
             return redirect(url_for('reserve', item_id=item_id))
 
-        # Логика для обработки дат бронирования
+        
         if reservation_type == 'single_day':
             reservation_date = request.form.get('reservation_date')
             logging.info(f"Бронирование на один день для {user_name} {user_surname} на {reservation_date}.")
-        else:  # Интервал
+        else:  
             start_date = request.form.get('start_date')
             end_date = request.form.get('end_date')
             logging.info(f"Бронирование на интервал для {user_name} {user_surname} с {start_date} по {end_date}.")
@@ -264,7 +264,7 @@ def reserve(item_id):
     return render_template('reserve.html', item=item, today_date=today_date, max_date=max_date)
 
 def validate_phone(phone):
-    # Простая проверка формата номера телефона (можно улучшить)
+    
     return len(phone) >= 10 and phone.isdigit()
 
 @app.route('/confirm_reservation', methods=['POST'])
@@ -277,7 +277,7 @@ def confirm_reservation():
         reservation_date = datetime.strptime(reservation_date_str, '%Y-%m-%d').date()
         item = Item.query.get_or_404(item_id)
 
-        # Проверка, что дата бронирования находится в допустимом диапазоне
+        
         today_date = datetime.now().date()
         max_date = today_date + timedelta(days=30)
 
@@ -285,7 +285,7 @@ def confirm_reservation():
             flash(f'Дата бронирования должна быть между {today_date} и {max_date}.', 'danger')
             return redirect(url_for('reserve', item_id=item_id))
 
-        # Обновляем статус предмета
+       
         item.status = 'reserved'
         item.return_date = reservation_date
         db.session.commit()
@@ -305,15 +305,15 @@ def confirm_reservation():
         return redirect(url_for('reserve', item_id=item_id))
 
 
-# Категория будет передаваться через URL
+
 @app.route('/items/<string:category>')
 def items_by_category(category):
     try:
-        # Получаем все предметы с указанной категорией
+        
         items = Item.query.filter_by(category=category).all()
         logging.info(f"Получено {len(items)} предметов категории '{category}'.")
 
-        # Проверяем, если предметов нет
+       
         if not items:
             flash(f'Предметы категории "{category}" не найдены.', 'warning')
 
@@ -324,7 +324,7 @@ def items_by_category(category):
         flash('Произошла ошибка при загрузке предметов. Попробуйте снова.', 'danger')
         return render_template('items.html', items=[])
 
-# Обновите маршруты для категорий
+
 @app.route('/clothing')
 def clothing():
     return items_by_category('clothing')  # Используйте английские названия
@@ -394,7 +394,7 @@ def admin_panel():
 @app.route('/admin/add_item', methods=['POST'])
 @admin_required
 def add_item():
-    # Получение данных из формы
+    
     name = request.form['name']
     size = request.form['size']
     color = request.form['color']
@@ -516,7 +516,7 @@ async def webhook():
     update = request.get_json()
     logging.info(f"Webhook вызван: {update}")
 
-    # Обработка обновления
+    
     await application.process_update(Update.de_json(update, application.bot))
     return 'OK'
 
@@ -628,7 +628,7 @@ def run_bot():
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()  # Инициализируем базу данных один раз
+        db.create_all()  
     set_webhook()
 
     flask_thread = threading.Thread(target=lambda: app.run(
@@ -637,9 +637,7 @@ if __name__ == '__main__':
 
     bot_thread = threading.Thread(target=run_bot)
     bot_thread.start()
-
     flask_thread.join()
     bot_thread.join()
-    import asyncio
     asyncio.run(bot_main())
     app.run(port=8080)
