@@ -16,14 +16,26 @@ from datetime import datetime, timedelta
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from aiogram import Bot, Dispatcher, types
+from functools import wraps
+from telebot import types
 
 app = Flask(__name__, static_folder='static')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'QwE123678'
-app.config['UPLOAD_FOLDER'] = 'static/images'
+app.config['UPLOAD_FOLDER'] = 'web_bot\\static\\images'
+
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+
+
+# Настройка логирования
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
 category_mapping = {
     'clothing': 'Одежда',
@@ -35,7 +47,9 @@ category_mapping = {
 }
 
 admin_password_hash = ADMIN_PASSWORD_HASH
-print("Admin password hash:", admin_password_hash)
+logger.info("Admin password hash загружен.")
+
+bot = Bot(token=TOKEN_TELEGRAM)
 
 
 class User(db.Model):
@@ -51,6 +65,9 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password, password)
 
+    def __repr__(self):
+        return f"<User {self.first_name} {self.last_name}, Email: {self.email}>"
+
 
 class Item(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -64,6 +81,9 @@ class Item(db.Model):
     category = db.Column(db.String(50))
     description = db.Column(db.String(255))
 
+    def __repr__(self):
+        return f"<Item {self.name}, Price: {self.price}>"
+
 
 def get_item_by_id(item_id):
     return Item.query.get_or_404(item_id)
@@ -75,27 +95,41 @@ def item_detail(item_id):
     return render_template('item_detail.html', item=item)
 
 
-def send_email(subject, body, to_email="rabotabota24@mail.ru"):
-    from_email = "rabotabota24@mail.ru"
-    password = "4v0qFjVF65ZwvETPpKzD"
 
-    msg = MIMEMultipart()
-    msg['From'] = from_email
-    msg['To'] = to_email
-    msg['Subject'] = subject
-
-    msg.attach(MIMEText(body, 'plain'))
-
+def configure_server(from_email, password):
     try:
         server = smtplib.SMTP('smtp.mail.ru', 587)
         server.starttls()
         server.login(from_email, password)
-        text = msg.as_string()
-        server.sendmail(from_email, to_email, text)
-        server.quit()
-        print("Письмо отправлено успешно")
+        return server
     except Exception as e:
-        print(f"Не удалось отправить письмо: {e}")
+        print(f"Ошибка при настройке сервера: {e}")
+        return None
+
+def create_message(subject, body, from_email, to_email):
+    msg = MIMEMultipart()
+    msg['From'] = from_email
+    msg['To'] = to_email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(body, 'plain'))
+    return msg
+
+def send_email(subject, body, to_email="rabotabota24@mail.ru"):
+    from_email = "rabotabota24@mail.ru"
+    password = "4v0qFjVF65ZwvETPpKzD"
+
+    msg = create_message(subject, body, from_email, to_email)
+    
+    if server := configure_server(from_email, password):
+        try:
+            server.sendmail(from_email, to_email, msg.as_string())
+            print("Письмо отправлено успешно")
+        except Exception as e:
+            print(f"Не удалось отправить письмо: {e}")
+        finally:
+            server.quit()
+    else:
+        print("Не удалось настроить соединение с сервером")
 
 
 @app.route('/')
@@ -135,170 +169,297 @@ def edit_item(item_id):
 @app.route('/update_item/<int:item_id>', methods=['POST'])
 def update_item(item_id):
     item = Item.query.get_or_404(item_id)
+
     item.name = request.form['name']
     item.size = request.form['size']
     item.color = request.form['color']
     item.description = request.form.get('description', '')
     item.category = request.form['category']
-    item.price = float(request.form['price'])
+
+    try:
+        item.price = float(request.form['price'])
+    except ValueError:
+        flash('Некорректная цена. Пожалуйста, введите число.', 'danger')
+        logging.warning(
+            f"Некорректное значение цены для элемента ID {item_id}.")
+        return redirect(url_for('edit_item', item_id=item_id))
+
     item.status = request.form['status']
 
+    # Обработка загружаемого изображения
     image = request.files.get('image')
     if image and image.filename:
+        # Проверка на допустимый тип изображения
+        if not allowed_file(image.filename):
+            flash('Недопустимый тип файла. Пожалуйста, загрузите изображение.', 'danger')
+            return redirect(url_for('edit_item', item_id=item_id))
+
         filename = image.filename
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        image.save(file_path)
-        item.image = filename
 
-    db.session.commit()
+        try:
+            image.save(file_path)
+            item.image = filename
+            logging.info(f"Изображение для элемента ID {
+                         item_id} успешно обновлено.")
+        except Exception as e:
+            logging.error(
+                f"Ошибка при сохранении изображения для элемента ID {item_id}: {e}")
+            flash('Ошибка при загрузке изображения. Попробуйте еще раз.', 'danger')
+
+    # Сохраняем изменения в базе данных
+    try:
+        db.session.commit()
+        logging.info(f"Элемент ID {item_id} успешно обновлен.")
+    except Exception as e:
+        logging.error(f"Ошибка при обновлении элемента ID {item_id}: {e}")
+        flash('Произошла ошибка при обновлении элемента. Попробуйте еще раз.', 'danger')
+        db.session.rollback()
+        return redirect(url_for('edit_item', item_id=item_id))
+
     return redirect(url_for('admin_panel'))
+
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 @app.route('/reservation_success')
 def success():
-    user_email = "example@example.com"
+    user_email = request.args.get('user_email', "rabotabota24@mail.ru")
+    logging.info(f"Пользователь с email {user_email} успешно завершил бронь.")
     return render_template('reservation_success.html', user_email=user_email)
-
 
 @app.route('/reserve/<int:item_id>', methods=['GET', 'POST'])
 def reserve(item_id):
-    item = Item.query.get_or_404(item_id)
+    item = get_item_by_id(item_id)
     today_date = datetime.now().date()
-    max_date = today_date + timedelta(days=365)
+    max_date = today_date + timedelta(days=30)
 
     if request.method == 'POST':
-        user_name = request.form['user_name']
-        user_surname = request.form['user_surname']
-        reservation_type = request.form['reservation_type']
-        reservation_date = request.form.get('reservation_date')
-        start_date = request.form.get('start_date')
-        end_date = request.form.get('end_date')
-        payment_method = request.form['payment_method']
-        user_phone = request.form['user_phone']
+        user_name = request.form.get('user_name')
+        user_surname = request.form.get('user_surname')
+        reservation_type = request.form.get('reservation_type')
+        user_phone = request.form.get('user_phone')
 
-        subject = "Новая бронь"
-        body = (f"Новая бронь:\n"
-                f"Имя: {user_name}\n"
-                f"Фамилия: {user_surname}\n"
-                f"Тип бронирования: {
-                    'Один день' if reservation_type == 'single_day' else 'Интервал'}\n"
-                f"Дата резервирования: {
-                    reservation_date if reservation_type == 'single_day' else ''}\n"
-                f"Дата начала: {
-                    start_date if reservation_type == 'interval' else ''}\n"
-                f"Дата окончания: {
-                    end_date if reservation_type == 'interval' else ''}\n"
-                f"Метод оплаты: {payment_method}\n"
-                f"Номер телефона: {user_phone}")
+        # Валидация телефона
+        if not validate_phone(user_phone):
+            flash('Некорректный номер телефона. Пожалуйста, введите корректный номер.', 'danger')
+            return redirect(url_for('reserve', item_id=item_id))
 
-        send_email(subject, body, "vetgid@mail.ru")
+        # Логика для обработки дат бронирования
+        if reservation_type == 'single_day':
+            reservation_date = request.form.get('reservation_date')
+            logging.info(f"Бронирование на один день для {user_name} {user_surname} на {reservation_date}.")
+        else:  # Интервал
+            start_date = request.form.get('start_date')
+            end_date = request.form.get('end_date')
+            logging.info(f"Бронирование на интервал для {user_name} {user_surname} с {start_date} по {end_date}.")
 
-        return redirect(url_for('success'))
+        return redirect(url_for('success', user_email="rabotabota24@mail.ru"))
 
     return render_template('reserve.html', item=item, today_date=today_date, max_date=max_date)
 
+def validate_phone(phone):
+    # Простая проверка формата номера телефона (можно улучшить)
+    return len(phone) >= 10 and phone.isdigit()
 
 @app.route('/confirm_reservation', methods=['POST'])
 def confirm_reservation():
     item_id = request.form['item_id']
     reservation_date_str = request.form['reservation_date']
+    user_email = request.form.get('user_email', "rabotabota24@mail.ru")
+
     try:
-        reservation_date = datetime.strptime(
-            reservation_date_str, '%Y-%m-%d').date()
+        reservation_date = datetime.strptime(reservation_date_str, '%Y-%m-%d').date()
         item = Item.query.get_or_404(item_id)
+
+        # Проверка, что дата бронирования находится в допустимом диапазоне
+        today_date = datetime.now().date()
+        max_date = today_date + timedelta(days=30)
+
+        if reservation_date < today_date or reservation_date > max_date:
+            flash(f'Дата бронирования должна быть между {today_date} и {max_date}.', 'danger')
+            return redirect(url_for('reserve', item_id=item_id))
+
+        # Обновляем статус предмета
         item.status = 'reserved'
         item.return_date = reservation_date
         db.session.commit()
-        return redirect(url_for('items'))
+
+        logging.info(f"Предмет ID {item_id} успешно забронирован до {reservation_date}.")
+
+        return redirect(url_for('reservation_success', user_email=user_email))
+
     except ValueError:
         flash('Некорректная дата. Попробуйте снова.', 'danger')
+        logging.warning("Пользователь ввел некорректную дату.")
+        return redirect(url_for('reserve', item_id=item_id))
+
+    except Exception as e:
+        logging.error(f"Ошибка при подтверждении бронирования: {e}")
+        flash('Произошла ошибка при подтверждении бронирования. Попробуйте еще раз.', 'danger')
+        return redirect(url_for('reserve', item_id=item_id))
 
 
+# Категория будет передаваться через URL
+@app.route('/items/<string:category>')
+def items_by_category(category):
+    try:
+        # Получаем все предметы с указанной категорией
+        items = Item.query.filter_by(category=category).all()
+        logging.info(f"Получено {len(items)} предметов категории '{category}'.")
+
+        # Проверяем, если предметов нет
+        if not items:
+            flash(f'Предметы категории "{category}" не найдены.', 'warning')
+
+        return render_template('items.html', items=items)
+
+    except Exception as e:
+        logging.error(f"Ошибка при получении предметов категории '{category}': {e}")
+        flash('Произошла ошибка при загрузке предметов. Попробуйте снова.', 'danger')
+        return render_template('items.html', items=[])
+
+# Обновите маршруты для категорий
 @app.route('/clothing')
 def clothing():
-    items = Item.query.filter_by(category='Одежда').all()
-    return render_template('items.html', items=items)
-
+    return items_by_category('clothing')  # Используйте английские названия
 
 @app.route('/accessories')
 def accessories():
-    items = Item.query.filter_by(category='Аксессуары').all()
-    return render_template('items.html', items=items)
-
+    return items_by_category('accessories')
 
 @app.route('/footwear')
 def footwear():
-    items = Item.query.filter_by(category='Обувь').all()
-    return render_template('items.html', items=items)
-
+    return items_by_category('shoes')
 
 @app.route('/headwear')
 def headwear():
-    items = Item.query.filter_by(category='Головные уборы').all()
-    return render_template('items.html', items=items)
-
+    return items_by_category('headwear')
 
 @app.route('/complete_outfit')
 def complete_outfit():
-    items = Item.query.filter_by(category='Готовый образ').all()
-    return render_template('items.html', items=items)
+    return items_by_category('ready_to_wear')
 
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('admin_logged_in'):
+            logging.warning("Неудачная попытка доступа без входа.")
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def handle_error(e, redirect_url, message):
+    logging.error(message)
+    flash('Произошла ошибка. Попробуйте снова.', 'danger')
+    return redirect(redirect_url)
 
 @app.route('/profile')
 def profile():
-    user = User.query.first()
-    rentals = []  # добавьте логику для получения истории аренды
-    return render_template('profile.html', user=user, rentals=rentals)
+    try:
+        user = User.query.first_or_404()  # Используем first_or_404 для обработки отсутствия пользователя
+
+        rentals = Rental.query.filter_by(user_id=user.id).all()
+        logging.info(f"Найдены {len(rentals)} записи(ей) истории аренды для пользователя {user.id}.")
+        return render_template('profile.html', user=user, rentals=rentals)
+
+    except Exception as e:
+        return handle_error(e, 'index', f"Ошибка при получении профиля пользователя: {e}")
+
 
 
 @app.route('/admin', methods=['GET'])
+@admin_required
 def admin_panel():
-    if not session.get('admin_logged_in'):
-        return redirect(url_for('admin_login'))
-
     category = request.args.get('category')
-    if category:
-        items = Item.query.filter_by(category=category).all()
-    else:
-        items = Item.query.all()
+    try:
+        if category:
+            items = Item.query.filter_by(category=category).all()
+            logging.info(f"Загружены предметы для категории: {
+                         category}, количество: {len(items)}.")
+        else:
+            items = Item.query.all()
+            logging.info(f"Загружены все предметы, количество: {len(items)}.")
+        return render_template('admin_panel.html', items=items)
 
-    return render_template('admin_panel.html', items=items)
+    except Exception as e:
+        return handle_error(e, 'admin_panel', f"Ошибка при загрузке панели администратора: {e}")
 
 
 @app.route('/admin/add_item', methods=['POST'])
+@admin_required
 def add_item():
-    if not session.get('admin_logged_in'):
-        return redirect(url_for('admin_login'))
-
+    # Получение данных из формы
     name = request.form['name']
     size = request.form['size']
     color = request.form['color']
     description = request.form.get('description', '')
     category = request.form['category']
-    price = float(request.form['price'])
+    price = request.form['price']
     status = request.form['status']
     image = request.files.get('image')
     filename = image.filename if image else None
+
+    if not all([name, size, color, category, price, status]):
+        flash('Пожалуйста, заполните все обязательные поля.', 'danger')
+        logging.warning("Пользователь не заполнил обязательные поля.")
+        return redirect(url_for('admin_panel'))
+
+    try:
+        price = float(price)
+    except ValueError:
+        flash('Некорректная цена. Пожалуйста, введите числовое значение.', 'danger')
+        logging.warning("Пользователь ввел некорректную цену.")
+        return redirect(url_for('admin_panel'))
 
     if image and filename:
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         image.save(file_path)
 
-    new_item = Item(name=name, size=size, color=color, description=description,
-                    category=category, price=price, status=status, image=filename)
+    new_item = Item(
+        name=name, size=size, color=color, description=description,
+        category=category, price=price, status=status, image=filename
+    )
     db.session.add(new_item)
     db.session.commit()
+    logging.info(f"Предмет '{name}' успешно добавлен администратором.")
+
     return redirect(url_for('admin_panel'))
 
 
-@app.route('/admin/delete_item/<int:item_id>', methods=['POST'])
-def delete_item(item_id):
-    if not session.get('admin_logged_in'):
-        return redirect(url_for('admin_login'))
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('admin_logged_in'):
+            logging.warning("Неудачная попытка доступа без входа.")
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
-    item = Item.query.get_or_404(item_id)
-    db.session.delete(item)
-    db.session.commit()
+
+def handle_error(e, redirect_url, message):
+    logging.error(message)
+    flash('Произошла ошибка. Попробуйте снова.', 'danger')
+    return redirect(redirect_url)
+
+
+@app.route('/admin/delete_item/<int:item_id>', methods=['POST'])
+@admin_required
+def delete_item(item_id):
+    try:
+        item = Item.query.get_or_404(item_id)
+        db.session.delete(item)
+        db.session.commit()
+        logging.info(f"Предмет ID {item_id} успешно удален администратором.")
+        flash('Предмет успешно удален.', 'success')
+    except Exception as e:
+        return handle_error(e, 'admin_panel', f"Ошибка при удалении предмета ID {item_id}.")
+
     return redirect(url_for('admin_panel'))
 
 
@@ -306,48 +467,62 @@ def delete_item(item_id):
 def admin_login():
     if request.method == 'POST':
         password = request.form.get('password')
+
         if check_password_hash(admin_password_hash, password):
             session['admin_logged_in'] = True
+            flash('Вы успешно вошли в систему.', 'success')
+            logging.info("Администратор вошел в систему.")
             return redirect(url_for('admin_panel'))
         else:
             flash('Неверный пароль. Попробуйте снова.', 'danger')
+            logging.warning(
+                "Неудачная попытка входа администратора: неверный пароль.")
+
     return render_template('admin_login.html')
 
 
 @app.route('/item/<int:item_id>')
 def item_detail(item_id):
     item = get_item_by_id(item_id)
+
+    if item is None:
+        flash('Предмет не найден.', 'danger')
+        logging.warning(
+            f"Попытка доступа к несуществующему предмету с ID {item_id}.")
+        return redirect(url_for('items'))
+
+    logging.info(f"Детали предмета с ID {item_id} были успешно загружены.")
     return render_template('item_detail.html', item=item)
 
 
 @app.route('/admin/logout')
 def admin_logout():
     session.pop('admin_logged_in', None)
+    logging.info("Администратор вышел из системы.")
+    flash('Вы успешно вышли из системы.', 'success')
     return redirect(url_for('admin_login'))
 
 
 async def process_webhook(update: Update) -> None:
-    await application.process_update(update)
+    try:
+        await application.process_update(update)
+    except Exception as e:
+        logging.error(f"Ошибка при обработке обновления: {e}")
+        logging.info("Обновление обработано.")
 
 
-@app.route(f'/{TOKEN_TELEGRAM}', methods=['POST'])
-def webhook():
-    json_str = request.get_data(as_text=True)
-    update = Update.de_json(json.loads(json_str), application.bot)
+@app.route('/webhook', methods=['POST'])
+async def webhook():
+    update = request.get_json()
+    logging.info(f"Webhook вызван: {update}")
 
-    # Создаем новый цикл событий
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-    # Запускаем асинхронную задачу
-    asyncio.run_coroutine_threadsafe(
-        process_webhook(update), loop)
-
-    return '', 200
+    # Обработка обновления
+    await application.process_update(Update.de_json(update, application.bot))
+    return 'OK'
 
 
 def set_webhook():
-    url = f"{NGROK_URL}/{TOKEN_TELEGRAM}"
+    url = "https://smoothly-fun-cicada.ngrok-free.app/webhook"
     try:
         response = requests.post(
             f'https://api.telegram.org/bot{TOKEN_TELEGRAM}/setWebhook',
@@ -357,45 +532,70 @@ def set_webhook():
         logging.info(f'Set webhook response: {response.json()}')
     except requests.RequestException as e:
         logging.error(f'Ошибка установки webhook: {e}')
+        if e.response is not None:
+            logging.error(f'Response content: {e.response.content}')
+        else:
+            logging.error("Не удалось получить ответ от сервера Telegram.")
 
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
-)
+AUTHORIZED_USERS = {701768868}
 
 
 def is_authorized_user(user_id):
-    return user_id == ADMIN_ID or user_id == USER_ID
+    return user_id in AUTHORIZED_USERS
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    url = 'https://smoothly-fun-cicada.ngrok-free.app/'
+    try:
+        await update.message.reply_text("Привет! Перейдите на нашу стартовую страницу: {url}")
+    except Exception as e:
+        logging.error(f"Error while replying to message: {e}")
+    logging.info("Команда /start получена.")
+    user_id = update.message.from_user.id
+    logging.info(f"User ID {user_id} initiated /start command.")
+
+    if not is_authorized_user(user_id):
+        await update.message.reply_text("У вас нет прав для использования этого бота.")
+        logging.warning(f"Unauthorized access attempt by User ID {user_id}.")
+        return
+
+    url = f"{NGROK_URL}/"
     await update.message.reply_text(f"Привет! Перейдите на нашу стартовую страницу: {url}")
+    logging.info(f"Response sent to User ID {
+                 user_id}: Привет! Перейдите на нашу стартовую страницу: {url}")
 
 
 async def admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.from_user.id
     logging.info(f"Received /admin command from user ID: {user_id}")
+
     if user_id == ADMIN_ID:
-        await update.message.reply_text("Эта команда доступна только администратору.")
+        await update.message.reply_text("Вы вошли в панель администратора.")
+        logging.info(f"User ID {user_id} granted access to admin panel.")
     else:
         await update.message.reply_text("У вас нет прав для выполнения этой команды.")
+        logging.warning(f"Unauthorized access attempt by User ID: {
+                        user_id} for /admin command.")
 
 
 async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.from_user.id
     logging.info(f"Received /stop command from user ID: {user_id}")
+
     if user_id == ADMIN_ID:
         await update.message.reply_text("Останавливаю сервер и бота...")
         shutdown_server()
     else:
         await update.message.reply_text("У вас нет прав для выполнения этой команды.")
+        logging.warning(f"Unauthorized access attempt by User ID: {
+                        user_id} for /stop command.")
 
 
 def shutdown_server():
     func = request.environ.get('werkzeug.server.shutdown')
     if func:
         func()
+        logging.info("Сервер успешно остановлен.")
     else:
         logging.error("Ошибка: сервер не использует Werkzeug.")
 
@@ -403,19 +603,23 @@ def shutdown_server():
 async def bot_main() -> None:
     global application
     application = ApplicationBuilder().token(TOKEN_TELEGRAM).build()
+
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("admin", admin_command))
-    application.add_handler(CommandHandler("stop", stop))
 
     await application.initialize()
-    set_webhook()
+    await application.bot.set_webhook(f"{NGROK_URL}/webhook")
+    logging.info("Webhook установлен.")
+
     await application.start()
+    logging.info("Бот запущен и ждет обновлений.")
 
     try:
         while True:
             await asyncio.sleep(3600)
     except asyncio.CancelledError:
+        logging.info("Остановка бота...")
         await application.stop()
+        logging.info("Бот успешно остановлен.")
 
 
 def run_bot():
@@ -424,7 +628,8 @@ def run_bot():
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
+        db.create_all()  # Инициализируем базу данных один раз
+    set_webhook()
 
     flask_thread = threading.Thread(target=lambda: app.run(
         debug=True, host='0.0.0.0', port=8080, use_reloader=False))
@@ -435,3 +640,6 @@ if __name__ == '__main__':
 
     flask_thread.join()
     bot_thread.join()
+    import asyncio
+    asyncio.run(bot_main())
+    app.run(port=8080)
